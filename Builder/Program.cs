@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
 using Microsoft.Build.Framework;
@@ -73,6 +74,13 @@ namespace Builder
     {
         static void Main(string[] args)
         {
+            AppDomain.CurrentDomain.AssemblyResolve += (sender, eventArgs) =>
+            {
+                var msBuildFolder = Environment.ExpandEnvironmentVariables(@"%VSINSTALLDIR%\MSBuild\15.0\Bin");
+                var targetAssembly = Path.Combine(msBuildFolder, new AssemblyName(eventArgs.Name).Name + ".dll");
+                return File.Exists(targetAssembly) ? Assembly.LoadFrom(targetAssembly) : null;
+            };
+
             Builder builder = new Builder(Directory.GetCurrentDirectory());
 
             builder.Build(new[] {
