@@ -6,6 +6,7 @@ using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
 using Microsoft.Build.Framework;
 using System.Threading;
+using Microsoft.Build.Shared;
 using Microsoft.Build.Utilities;
 
 namespace Builder
@@ -76,8 +77,7 @@ namespace Builder
         {
             AppDomain.CurrentDomain.AssemblyResolve += (sender, eventArgs) =>
             {
-                var msBuildFolder = Environment.ExpandEnvironmentVariables(@"%VSINSTALLDIR%\MSBuild\15.0\Bin");
-                var targetAssembly = Path.Combine(msBuildFolder, new AssemblyName(eventArgs.Name).Name + ".dll");
+                var targetAssembly = Path.Combine(GetMSBuildPath(), new AssemblyName(eventArgs.Name).Name + ".dll");
                 return File.Exists(targetAssembly) ? Assembly.LoadFrom(targetAssembly) : null;
             };
 
@@ -105,6 +105,33 @@ namespace Builder
                 "resources/repo3/A.UTest/A.UTest.csproj",
                 "resources/repo3/B/B.csproj",
             }, "Clean", true, Environment.ProcessorCount);
+        }
+
+        private static string GetMSBuildPath()
+        {
+            // Dev console, probably the best case
+            var vsinstalldir = Environment.GetEnvironmentVariable("VSINSTALLDIR");
+            if (!string.IsNullOrEmpty(vsinstalldir))
+            {
+                var path = Path.Combine(vsinstalldir, "MSBuild", "15.0", "Bin");
+                Console.WriteLine($"Found VS from VSINSTALLDIR (Dev Console): {path}");
+                return path;
+            }
+
+            var instances = VisualStudioLocationHelper.GetInstances();
+
+            if (instances.Count == 0)
+            {
+                throw new Exception("Couldn't find MSBuild");
+            }
+
+            Console.WriteLine($"Found VS from Setup API: {instances[0].Path}");
+            if (instances.Count > 1)
+            {
+                Console.WriteLine($"WARNING: Found ${instances.Count} instances of VS! Picking the first...");
+            }
+
+            return Path.Combine(instances[0].Path, "MSBuild", "15.0", "Bin");
         }
     }
 }
