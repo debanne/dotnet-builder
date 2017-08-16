@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Execution;
@@ -119,19 +120,18 @@ namespace Builder
             }
 
             var instances = VisualStudioLocationHelper.GetInstances();
-
             if (instances.Count == 0)
             {
                 throw new Exception("Couldn't find MSBuild");
             }
-
-            Console.WriteLine($"Found VS from Setup API: {instances[0].Path}");
             if (instances.Count > 1)
             {
-                Console.WriteLine($"WARNING: Found ${instances.Count} instances of VS! Picking the first...");
+                Console.WriteLine($"WARNING: Found {instances.Count} instances of VS: {string.Join(", ", instances.Select(i => i.Path))}");
             }
+            string instancePath = instances[0].Path;
+            Console.WriteLine($"Used VS from Setup API: {instancePath}");
 
-            return Path.Combine(instances[0].Path, "MSBuild", "15.0", "Bin");
+            return Path.Combine(instancePath, "MSBuild", "15.0", "Bin");
         }
     }
 }
